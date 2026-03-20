@@ -1,0 +1,2103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personality Archaeologist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── RESET & BASE ──────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:       #0d0c0a;
+  --parchment: #f5f0e8;
+  --aged:      #e8e0cc;
+  --dust:      #c9bfa8;
+  --fossil:    #8b7d65;
+  --sepia:     #5c4a32;
+  --deep:      #1a1510;
+  --amber:     #c8860a;
+  --amber-glow:#e8a020;
+  --rust:      #9b3a1a;
+  --sage:      #4a6741;
+  --bone:      #d4c8b0;
+  --shadow:    rgba(13,12,10,0.6);
+  --glow:      rgba(200,134,10,0.15);
+  --font-display: 'Cormorant Garamond', serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--ink);
+  color: var(--parchment);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ── GRAIN OVERLAY ─────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.5;
+}
+
+/* ── STRATA BACKGROUND ─────────────────────────── */
+.strata-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.strata-layer {
+  position: absolute;
+  width: 120%;
+  left: -10%;
+  height: 8px;
+  opacity: 0.06;
+}
+
+/* ── CUSTOM CURSOR ─────────────────────────────── */
+.cursor-dot {
+  width: 6px; height: 6px;
+  background: var(--amber);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  transition: transform 0.1s ease;
+  mix-blend-mode: screen;
+}
+
+.cursor-ring {
+  width: 28px; height: 28px;
+  border: 1px solid rgba(200,134,10,0.4);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  transition: transform 0.25s ease, width 0.2s ease, height 0.2s ease, opacity 0.2s;
+  transform: translate(-11px,-11px);
+}
+
+/* ── MAIN LAYOUT ───────────────────────────────── */
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+/* ── HERO ──────────────────────────────────────── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 0 40px;
+  position: relative;
+}
+
+.hero-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.2s ease forwards;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(52px, 9vw, 96px);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--parchment);
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: fadeUp 0.9s 0.4s ease forwards;
+}
+
+.hero-title em {
+  font-style: italic;
+  color: var(--amber);
+}
+
+.hero-desc {
+  font-size: 15px;
+  color: var(--dust);
+  max-width: 520px;
+  line-height: 1.8;
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp 0.9s 0.6s ease forwards;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 56px;
+  opacity: 0;
+  animation: fadeUp 0.9s 0.8s ease forwards;
+}
+
+.hero-stat-num {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 300;
+  color: var(--amber);
+  line-height: 1;
+}
+
+.hero-stat-label {
+  font-size: 12px;
+  color: var(--fossil);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--amber);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 16px 32px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  opacity: 0;
+  animation: fadeUp 0.9s 1s ease forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.15);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.hero-cta:hover::before { transform: translateX(0); }
+.hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(200,134,10,0.35); }
+
+.hero-scroll {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fossil);
+  opacity: 0;
+  animation: fadeUp 1s 1.4s ease forwards;
+}
+
+.scroll-line {
+  width: 40px;
+  height: 1px;
+  background: var(--fossil);
+  position: relative;
+  overflow: hidden;
+}
+
+.scroll-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--amber);
+  animation: scrollAnim 2s ease infinite;
+}
+
+@keyframes scrollAnim {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ── SECTION HEADERS ───────────────────────────── */
+.section-marker {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.section-num {
+  font-size: 12px;
+  color: var(--amber);
+  letter-spacing: 0.2em;
+  flex-shrink: 0;
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(200,134,10,0.4), transparent);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4.5vw, 48px);
+  font-weight: 300;
+  color: var(--parchment);
+  margin-bottom: 8px;
+  line-height: 1.1;
+}
+
+.section-sub {
+  font-size: 13px;
+  color: var(--fossil);
+  letter-spacing: 0.08em;
+}
+
+/* ── EXCAVATION PANEL ──────────────────────────── */
+.excavation-section {
+  padding: 80px 0 60px;
+}
+
+.entry-container {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.entry-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(200,134,10,0.15);
+  padding: 0;
+  position: relative;
+  transition: border-color 0.3s ease, transform 0.2s ease;
+  animation: cardIn 0.4s ease backwards;
+  overflow: hidden;
+}
+
+.entry-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--amber);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.3s ease;
+}
+
+.entry-card:focus-within { border-color: rgba(200,134,10,0.5); }
+.entry-card:focus-within::before { transform: scaleY(1); }
+
+.entry-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(200,134,10,0.08);
+  background: rgba(200,134,10,0.03);
+}
+
+.entry-num {
+  font-size: 12px;
+  color: var(--amber);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.entry-date-btn {
+  background: transparent;
+  border: none;
+  color: var(--dust);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  letter-spacing: 0.06em;
+  transition: color 0.2s;
+}
+.entry-date-btn:hover { color: var(--amber); }
+.entry-date-btn svg { opacity: 0.5; transition: opacity 0.2s; }
+.entry-date-btn:hover svg { opacity: 1; }
+
+/* ── CUSTOM CALENDAR ───────────────────────────── */
+.cal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(13,12,10,0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.cal-popup {
+  position: absolute;
+  background: #141210;
+  border: 1px solid rgba(200,134,10,0.3);
+  width: 260px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(200,134,10,0.08);
+  animation: calIn 0.18s cubic-bezier(0.16,1,0.3,1) forwards;
+  z-index: 3001;
+}
+
+@keyframes calIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(200,134,10,0.1);
+}
+
+.cal-month-label {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--parchment);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.cal-month-label:hover { color: var(--amber); }
+
+.cal-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.cal-nav-btn {
+  background: none;
+  border: 1px solid rgba(200,134,10,0.2);
+  color: var(--fossil);
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+  padding: 0;
+  font-family: var(--font-mono);
+}
+.cal-nav-btn:hover { border-color: var(--amber); color: var(--amber); background: rgba(200,134,10,0.08); }
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 8px 12px 4px;
+  gap: 0;
+}
+
+.cal-wd {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fossil);
+  padding: 4px 0;
+}
+
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 0 12px 12px;
+  gap: 2px;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--dust);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.12s;
+  position: relative;
+}
+
+.cal-day:hover:not(.cal-day-empty):not(.cal-day-selected) {
+  border-color: rgba(200,134,10,0.3);
+  color: var(--amber);
+  background: rgba(200,134,10,0.06);
+}
+
+.cal-day-empty { cursor: default; color: rgba(139,125,101,0.25); }
+
+.cal-day-selected {
+  background: var(--amber) !important;
+  color: var(--ink) !important;
+  border-color: var(--amber) !important;
+  font-weight: 700;
+}
+
+.cal-day-today:not(.cal-day-selected) {
+  border-color: rgba(200,134,10,0.4);
+  color: var(--amber);
+}
+
+.cal-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 16px 12px;
+  border-top: 1px solid rgba(200,134,10,0.08);
+}
+
+.cal-foot-btn {
+  background: none;
+  border: none;
+  color: var(--fossil);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+.cal-foot-btn:hover { color: var(--amber); }
+
+/* Year picker overlay */
+.cal-year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 12px;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.cal-year-grid::-webkit-scrollbar { width: 3px; }
+.cal-year-grid::-webkit-scrollbar-thumb { background: rgba(200,134,10,0.3); }
+
+.cal-year-item {
+  text-align: center;
+  padding: 7px 4px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--dust);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.12s;
+}
+.cal-year-item:hover { border-color: rgba(200,134,10,0.3); color: var(--amber); }
+.cal-year-item.selected { background: var(--amber); color: var(--ink); font-weight: 700; }
+
+.entry-delete {
+  background: none;
+  border: none;
+  color: var(--fossil);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 4px;
+  transition: color 0.2s;
+  line-height: 1;
+}
+.entry-delete:hover { color: var(--rust); }
+
+.entry-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--parchment);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.8;
+  padding: 16px 20px 20px;
+  resize: vertical;
+  min-height: 120px;
+  outline: none;
+}
+
+.entry-textarea::placeholder { color: var(--fossil); font-style: italic; }
+
+.entry-char-count {
+  position: absolute;
+  bottom: 8px;
+  right: 14px;
+  font-size: 11px;
+  color: var(--fossil);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.entry-card:focus-within .entry-char-count { opacity: 1; }
+
+.entry-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.btn-add-entry {
+  background: none;
+  border: 1px dashed rgba(200,134,10,0.35);
+  color: var(--fossil);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-add-entry:hover { border-color: var(--amber); color: var(--amber); background: var(--glow); }
+
+.btn-load-demo {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--fossil);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-load-demo:hover { border-color: rgba(255,255,255,0.2); color: var(--dust); }
+
+/* ── EXCAVATE BUTTON ───────────────────────────── */
+.excavate-btn-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.btn-excavate {
+  position: relative;
+  background: transparent;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 18px 48px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.btn-excavate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--amber);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  z-index: -1;
+}
+
+.btn-excavate:hover { color: var(--ink); }
+.btn-excavate:hover::before { transform: translateY(0); }
+
+.btn-excavate:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── LOADING STATE ─────────────────────────────── */
+.loading-overlay {
+  display: none;
+  padding: 48px 0;
+}
+.loading-overlay.active { display: block; }
+
+.loading-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--parchment);
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.loading-msg {
+  font-size: 13px;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+  margin-bottom: 32px;
+  min-height: 18px;
+  transition: opacity 0.3s;
+}
+
+.loading-bar-wrap {
+  width: 100%;
+  max-width: 400px;
+  height: 2px;
+  background: rgba(200,134,10,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: var(--amber);
+  width: 0%;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.loading-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0;
+  width: 60px; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6));
+  animation: shimmer 1s ease infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-60px); }
+  100% { transform: translateX(60px); }
+}
+
+.loading-layers {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loading-layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--fossil);
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.loading-layer.done { opacity: 1; }
+.loading-layer.done .layer-dot { background: var(--sage); }
+
+.layer-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--fossil);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+/* ── RESULTS ───────────────────────────────────── */
+#results {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+#results.visible { opacity: 1; transform: translateY(0); }
+
+/* ── PORTRAITS ─────────────────────────────────── */
+.portraits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 40px 0;
+  background: rgba(200,134,10,0.12);
+  border: 1px solid rgba(200,134,10,0.12);
+}
+
+.portrait-card {
+  background: var(--deep);
+  padding: 28px 24px;
+  position: relative;
+  transition: background 0.3s;
+}
+
+.portrait-card:hover { background: rgba(200,134,10,0.04); }
+
+.portrait-era {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 12px;
+}
+
+.portrait-label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--bone);
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
+}
+
+.portrait-text {
+  font-size: 14px;
+  color: var(--dust);
+  line-height: 1.8;
+  font-style: italic;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 300;
+}
+
+.portrait-tag {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── CHART ─────────────────────────────────────── */
+.chart-section { margin: 56px 0; }
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--fossil);
+  cursor: pointer;
+  transition: color 0.2s;
+  user-select: none;
+}
+.legend-item:hover { color: var(--parchment); }
+.legend-item.muted { opacity: 0.35; }
+
+.legend-swatch {
+  width: 20px; height: 2px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  background: rgba(255,255,255,0.01);
+  border: 1px solid rgba(200,134,10,0.08);
+  padding: 20px;
+}
+
+/* ── INFLECTION POINTS ─────────────────────────── */
+.inflection-section { margin: 56px 0; }
+
+.inflection-timeline {
+  position: relative;
+  padding-left: 32px;
+}
+
+.inflection-timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: linear-gradient(180deg, var(--amber), transparent);
+}
+
+.inflection-item {
+  position: relative;
+  margin-bottom: 28px;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.inflection-item.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.inflection-dot {
+  position: absolute;
+  left: -29px;
+  top: 5px;
+  width: 10px; height: 10px;
+  border: 1px solid var(--amber);
+  background: var(--ink);
+  border-radius: 50%;
+}
+
+.inflection-dot::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: var(--amber);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.3s ease;
+}
+
+.inflection-item.visible .inflection-dot::after { transform: scale(1); }
+
+.inflection-date {
+  font-size: 12px;
+  color: var(--amber);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.inflection-content {
+  background: rgba(200,134,10,0.04);
+  border: 1px solid rgba(200,134,10,0.12);
+  border-left: 2px solid var(--amber);
+  padding: 14px 18px;
+}
+
+.inflection-text {
+  font-size: 15px;
+  color: var(--dust);
+  line-height: 1.7;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 18px;
+}
+
+/* ── TRAIT BARS ────────────────────────────────── */
+.traits-section { margin: 56px 0; }
+
+.traits-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 40px;
+}
+
+.trait-row { display: flex; flex-direction: column; gap: 6px; }
+
+.trait-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.trait-name {
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--fossil);
+}
+
+.trait-val {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--parchment);
+}
+
+.trait-bar-bg {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.trait-bar-fill {
+  height: 100%;
+  width: 0%;
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.trait-delta {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.trait-delta.up { color: var(--sage); }
+.trait-delta.down { color: var(--rust); }
+
+/* ── REPORT ────────────────────────────────────── */
+.report-section { margin: 56px 0; }
+
+.report-card {
+  position: relative;
+  border: 1px solid rgba(200,134,10,0.2);
+  padding: 48px 44px;
+  background: rgba(200,134,10,0.03);
+  overflow: hidden;
+}
+
+.report-card::before {
+  content: '"';
+  font-family: var(--font-display);
+  font-size: 200px;
+  color: rgba(200,134,10,0.06);
+  position: absolute;
+  top: -20px;
+  left: 20px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.report-text {
+  font-family: var(--font-display);
+  font-size: clamp(19px, 2.4vw, 25px);
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--parchment);
+  font-style: italic;
+  position: relative;
+  z-index: 1;
+}
+
+.report-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(200,134,10,0.12);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.report-sig {
+  font-size: 12px;
+  color: var(--fossil);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.report-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  background: none;
+  border: 1px solid rgba(200,134,10,0.25);
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-action:hover { background: var(--glow); border-color: var(--amber); }
+
+/* ── SHARE / SAVE ──────────────────────────────── */
+.share-section {
+  margin: 40px 0;
+  padding: 28px;
+  border: 1px dashed rgba(200,134,10,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.share-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--parchment);
+  margin-bottom: 4px;
+}
+
+.share-sub {
+  font-size: 12px;
+  color: var(--fossil);
+  letter-spacing: 0.08em;
+}
+
+.share-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── COMPARISON MODE ───────────────────────────── */
+.compare-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(200,134,10,0.12);
+  border: 1px solid rgba(200,134,10,0.25);
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.compare-badge:hover { background: rgba(200,134,10,0.2); }
+
+/* ── FOOTER ────────────────────────────────────── */
+footer {
+  margin-top: 80px;
+  padding: 32px 0;
+  border-top: 1px solid rgba(200,134,10,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--fossil);
+  font-style: italic;
+}
+
+.footer-note {
+  font-size: 12px;
+  color: rgba(139,125,101,0.5);
+  letter-spacing: 0.08em;
+}
+
+/* ── TOAST ─────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--deep);
+  border: 1px solid rgba(200,134,10,0.3);
+  color: var(--parchment);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  padding: 12px 24px;
+  z-index: 9000;
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── ANIMATIONS ────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.in-view { opacity: 1; transform: translateY(0); }
+
+/* ── SCROLLBAR ─────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--deep); }
+::-webkit-scrollbar-thumb { background: rgba(200,134,10,0.3); border-radius: 2px; }
+
+/* ── RESPONSIVE ────────────────────────────────── */
+@media (max-width: 680px) {
+  .portraits-grid { grid-template-columns: 1fr; }
+  .traits-grid { grid-template-columns: 1fr; }
+  .hero-stats { gap: 24px; flex-wrap: wrap; }
+  .report-card { padding: 28px 22px; }
+  .app { padding: 0 16px 60px; }
+}
+
+@media (max-width: 440px) {
+  .hero-cta { width: 100%; justify-content: center; }
+  .share-section { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- Custom Cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Strata background layers -->
+<div class="strata-bg" id="strataBg"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<div class="app">
+
+  <!-- ── HERO ─────────────────────────────────── -->
+  <section class="hero" id="heroSection">
+    <div class="hero-eyebrow">Field Station No. 7 · Identity Research Lab</div>
+    <h1 class="hero-title">
+      Personality<br><em>Archaeologist</em>
+    </h1>
+    <p class="hero-desc">
+      Upload writing from different points in your life. Our excavation engine maps personality drift, uncovers identity fossils, marks inflection points, and projects who you are becoming.
+    </p>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-num" id="heroStatAnalyzed">0</div>
+        <div class="hero-stat-label">excavations run</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">8</div>
+        <div class="hero-stat-label">trait dimensions</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">∞</div>
+        <div class="hero-stat-label">depth of self</div>
+      </div>
+    </div>
+    <button class="hero-cta" onclick="document.getElementById('excavateSection').scrollIntoView({behavior:'smooth'})">
+      <span>begin excavation</span>
+      <span>↓</span>
+    </button>
+    <div class="hero-scroll">
+      <div class="scroll-line"></div>
+      <span>scroll to dig</span>
+    </div>
+  </section>
+
+  <!-- ── EXCAVATION ────────────────────────────── -->
+  <section class="excavation-section reveal" id="excavateSection">
+    <div class="section-marker">
+      <span class="section-num">01</span>
+      <div class="section-line"></div>
+    </div>
+    <h2 class="section-title">The Samples</h2>
+    <p class="section-sub" style="margin-bottom:32px;">Paste writing from different periods — journals, messages, essays, social posts. The further apart in time, the deeper the excavation.</p>
+
+    <div class="entry-container" id="entryContainer"></div>
+
+    <div class="entry-actions">
+      <button class="btn-add-entry" id="addEntryBtn">+ add another sample</button>
+      <button class="btn-load-demo" id="loadDemoBtn">load demo data</button>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap; margin-bottom: 16px;">
+      <div class="excavate-btn-wrap">
+        <button class="btn-excavate" id="excavateBtn">excavate identity</button>
+      </div>
+      <div style="font-size:10px; color:var(--fossil); letter-spacing:0.06em;" id="entryCountMsg"></div>
+    </div>
+  </section>
+
+  <!-- ── LOADING ───────────────────────────────── -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-title" id="loadingTitle">Entering the dig site…</div>
+    <div class="loading-msg" id="loadingMsg">preparing excavation tools</div>
+    <div class="loading-bar-wrap">
+      <div class="loading-bar-fill" id="loadingBar"></div>
+    </div>
+    <div class="loading-layers" id="loadingLayers"></div>
+  </div>
+
+  <!-- ── RESULTS ───────────────────────────────── -->
+  <div id="results">
+
+    <!-- Portraits -->
+    <section class="reveal" id="portraitsSection" style="padding: 40px 0 0;">
+      <div class="section-marker">
+        <span class="section-num">02</span>
+        <div class="section-line"></div>
+      </div>
+      <h2 class="section-title">Identity Portraits</h2>
+      <p class="section-sub" style="margin-bottom:8px;">Three selves excavated from the sediment.</p>
+      <div class="portraits-grid" id="portraitsGrid"></div>
+    </section>
+
+    <!-- Chart -->
+    <section class="chart-section reveal">
+      <div class="section-marker">
+        <span class="section-num">03</span>
+        <div class="section-line"></div>
+      </div>
+      <h2 class="section-title">Trait Drift</h2>
+      <p class="section-sub" style="margin-bottom:20px;">How your core traits shifted over time. Click a trait to isolate it.</p>
+      <div class="chart-legend" id="chartLegend"></div>
+      <div class="chart-wrap">
+        <canvas id="driftChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Inflection Points -->
+    <section class="inflection-section reveal">
+      <div class="section-marker">
+        <span class="section-num">04</span>
+        <div class="section-line"></div>
+      </div>
+      <h2 class="section-title">Inflection Points</h2>
+      <p class="section-sub" style="margin-bottom:28px;">Moments where the identity sediment shifted.</p>
+      <div class="inflection-timeline" id="inflectionTimeline"></div>
+    </section>
+
+    <!-- Trait Bars -->
+    <section class="traits-section reveal">
+      <div class="section-marker">
+        <span class="section-num">05</span>
+        <div class="section-line"></div>
+      </div>
+      <h2 class="section-title">Current Profile</h2>
+      <p class="section-sub" style="margin-bottom:28px;">Present-day trait scores with drift from earliest sample.</p>
+      <div class="traits-grid" id="traitBarsGrid"></div>
+    </section>
+
+    <!-- Report -->
+    <section class="report-section reveal">
+      <div class="section-marker">
+        <span class="section-num">06</span>
+        <div class="section-line"></div>
+      </div>
+      <h2 class="section-title">The Archaeologist's Report</h2>
+      <div class="report-card">
+        <div class="report-text" id="reportText"></div>
+        <div class="report-footer">
+          <div class="report-sig">Field Report · Personality Archaeologist™</div>
+          <div class="report-actions">
+            <button class="btn-action" id="copyReportBtn">copy report</button>
+            <button class="btn-action" id="saveResultsBtn">save as txt</button>
+            <button class="btn-action" id="newExcavationBtn">new excavation</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Share -->
+    <div class="share-section reveal">
+      <div>
+        <div class="share-title">Dig deeper</div>
+        <div class="share-sub">What else would you like to know about this identity?</div>
+      </div>
+      <div class="share-btns" id="shareBtns"></div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="reveal">
+    <div class="footer-brand">Personality Archaeologist</div>
+    <div class="footer-note">Powered by Claude · Identity research · Not a substitute for introspection</div>
+  </footer>
+
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────
+const TRAITS = ['Openness','Certainty','Warmth','Assertiveness','Idealism','Cynicism','Emotional depth','Introspection'];
+const TRAIT_COLORS = ['#c8860a','#4a9b7f','#9b3a1a','#7a5fa0','#5a8a42','#b04a4a','#4a7aac','#a07832'];
+const TRAIT_LABELS_SHORT = ['Open.','Certain.','Warmth','Assert.','Ideal.','Cynic.','Emo. depth','Introspect.'];
+
+let chartInstance = null;
+let hiddenTraits = new Set();
+let excavationCount = parseInt(localStorage.getItem('excavationCount') || '0');
+let lastResult = null;
+
+// ── CURSOR ─────────────────────────────────────
+const dot = document.getElementById('cursorDot');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  dot.style.transform = `translate(${mx - 3}px, ${my - 3}px)`;
+});
+function animRing() {
+  rx += (mx - rx - 14) * 0.12;
+  ry += (my - ry - 14) * 0.12;
+  ring.style.transform = `translate(${rx}px, ${ry}px)`;
+  requestAnimationFrame(animRing);
+}
+animRing();
+document.querySelectorAll('button, textarea, input, a').forEach(el => {
+  el.addEventListener('mouseenter', () => { ring.style.width='44px'; ring.style.height='44px'; ring.style.opacity='0.6'; });
+  el.addEventListener('mouseleave', () => { ring.style.width='28px'; ring.style.height='28px'; ring.style.opacity='1'; });
+});
+
+// ── STRATA BACKGROUND ──────────────────────────
+function buildStrata() {
+  const bg = document.getElementById('strataBg');
+  const heights = [8, 12, 6, 10, 14, 7, 9, 11, 8, 13];
+  let top = 60;
+  heights.forEach((h, i) => {
+    const el = document.createElement('div');
+    el.className = 'strata-layer';
+    el.style.cssText = `top:${top}px; height:${h}px; background:hsl(${35 + i*4},${30 + i*3}%,${50 + i*2}%);`;
+    bg.appendChild(el);
+    top += h + Math.random() * 60 + 30;
+  });
+}
+buildStrata();
+
+// ── COUNTER ANIMATION ──────────────────────────
+function animateCounter(el, target, duration = 1200) {
+  const start = performance.now();
+  const update = (now) => {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(ease * target);
+    if (t < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+animateCounter(document.getElementById('heroStatAnalyzed'), excavationCount);
+
+// ── SCROLL REVEAL ──────────────────────────────
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in-view'); });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+// ── ENTRY MANAGEMENT ──────────────────────────
+let entryCount = 0;
+
+function formatDisplayDate(isoDate) {
+  if (!isoDate) return 'set date';
+  const [y, m, d] = isoDate.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${months[parseInt(m)-1]} ${y}`;
+}
+
+function createEntry(date, text, animate) {
+  date = date || '';
+  text = text || '';
+  animate = animate !== false;
+  entryCount++;
+  const num = entryCount;
+  const div = document.createElement('div');
+  div.className = 'entry-card';
+  if (animate) div.style.animationDelay = '0ms';
+  div.dataset.entryId = num;
+  div.dataset.date = date;
+
+  div.innerHTML = '<div class="entry-card-header">' +
+    '<span class="entry-num">sample \xB7 ' + String(num).padStart(2,'0') + '</span>' +
+    '<button class="entry-date-btn" title="Pick date">' +
+      '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect x="1" y="2" width="10" height="9" rx="1" stroke="currentColor" stroke-width="1"/>' +
+        '<path d="M1 5h10" stroke="currentColor" stroke-width="1"/>' +
+        '<path d="M4 1v2M8 1v2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>' +
+      '</svg>' +
+      '<span class="date-display">' + formatDisplayDate(date) + '</span>' +
+    '</button>' +
+    '<button class="entry-delete" title="Remove sample">\xD7</button>' +
+  '</div>' +
+  '<textarea class="entry-textarea" placeholder="Paste any writing from this period \u2014 a journal entry, old message, essay, tweet thread, letter\u2026 The more honest and personal, the richer the excavation."></textarea>' +
+  '<div class="entry-char-count">0 chars</div>';
+
+  div.querySelector('.entry-delete').addEventListener('click', function() {
+    div.style.opacity = '0'; div.style.transform = 'translateY(-8px)';
+    setTimeout(function() { div.remove(); updateEntryCount(); }, 250);
+  });
+
+  div.querySelector('.entry-date-btn').addEventListener('click', function(e) {
+    openCalendar(e.currentTarget, div);
+  });
+
+  var ta = div.querySelector('.entry-textarea');
+  var cc = div.querySelector('.entry-char-count');
+  ta.addEventListener('input', function() { cc.textContent = ta.value.length + ' chars'; updateEntryCount(); });
+  if (text) { ta.value = text; cc.textContent = text.length + ' chars'; }
+  document.getElementById('entryContainer').appendChild(div);
+  updateEntryCount();
+  return div;
+}
+
+function updateEntryCount() {
+  const entries = getEntries();
+  const msg = document.getElementById('entryCountMsg');
+  if (entries.length === 0) msg.textContent = 'Add at least 2 samples to begin';
+  else if (entries.length === 1) msg.textContent = '1 sample — add at least 1 more';
+  else msg.textContent = `${entries.length} samples ready · ${entries.reduce((a,e)=>a+e.text.split(' ').length,0).toLocaleString()} total words`;
+}
+
+document.getElementById('addEntryBtn').addEventListener('click', () => {
+  const el = createEntry();
+  el.querySelector('.entry-textarea').focus();
+});
+
+// ── DEMO DATA ──────────────────────────────────
+const DEMO_ENTRIES = [
+  {
+    date: '2018-03-14',
+    text: `I got into the program!! I can't believe it. I've been dreaming about this since I was 16 and now it's actually happening. Everything feels possible. I know it won't be easy but I feel like I was made for this. I'm going to give everything. I'm going to change things. This is just the beginning of something huge and I can feel it in my bones. Called mom and she cried. I cried. Life is so beautiful sometimes it hurts.`
+  },
+  {
+    date: '2020-11-08',
+    text: `Third year is grinding me down in ways I didn't expect. The initial excitement has been replaced by something more complicated — a kind of wary respect for difficulty. I'm more careful now. Less quick to promise things. I've started noticing how often idealism becomes a liability, how the people who survive long-term aren't the most passionate but the most adaptable. I still believe in what I'm doing, but the belief has changed texture. It's quieter. Denser. Less fire, more stone.`
+  },
+  {
+    date: '2023-06-22',
+    text: `Thinking a lot about what I actually want versus what I was told to want. There's a real difference and it took me too long to notice it. I'm less interested in achievement as performance now. More interested in the small authentic things — a conversation that actually goes somewhere, work that doesn't pretend to be more important than it is. I've become more comfortable saying I don't know. More comfortable with contradiction. I think that's growth but it's hard to tell from inside.`
+  }
+];
+
+document.getElementById('loadDemoBtn').addEventListener('click', () => {
+  document.getElementById('entryContainer').innerHTML = '';
+  entryCount = 0;
+  DEMO_ENTRIES.forEach((e, i) => {
+    setTimeout(() => createEntry(e.date, e.text), i * 150);
+  });
+  showToast('Demo data loaded — 3 samples across 5 years');
+});
+
+// Initialize with 3 blank entries
+createEntry('2019-01-01');
+createEntry('2021-06-15');
+createEntry('2024-03-10');
+
+// ── GET ENTRIES ────────────────────────────────
+function getEntries() {
+  return Array.from(document.querySelectorAll('.entry-card'))
+    .map(function(card) {
+      return { date: card.dataset.date || '', text: card.querySelector('.entry-textarea').value.trim() };
+    })
+    .filter(function(e) { return e.date && e.text.length > 30; })
+    .sort(function(a, b) { return a.date.localeCompare(b.date); });
+}
+
+// ── LOADING SEQUENCE ───────────────────────────
+const LOADING_PHASES = [
+  { msg: 'Dating sediment layers by linguistic signature…', label: 'Temporal calibration' },
+  { msg: 'Mapping trait topology across samples…', label: 'Trait mapping' },
+  { msg: 'Detecting identity fault lines…', label: 'Inflection detection' },
+  { msg: 'Assembling identity portraits…', label: 'Portrait synthesis' },
+  { msg: 'Composing the archaeologist\'s report…', label: 'Report generation' },
+];
+
+function startLoading() {
+  const overlay = document.getElementById('loadingOverlay');
+  const bar = document.getElementById('loadingBar');
+  const layers = document.getElementById('loadingLayers');
+  const msg = document.getElementById('loadingMsg');
+  overlay.classList.add('active');
+  layers.innerHTML = LOADING_PHASES.map((p, i) => `
+    <div class="loading-layer" id="layer_${i}">
+      <div class="layer-dot"></div>
+      <span>${p.label}</span>
+    </div>`).join('');
+  let phase = 0;
+  const advance = () => {
+    if (phase >= LOADING_PHASES.length) return;
+    msg.style.opacity = '0';
+    setTimeout(() => {
+      msg.textContent = LOADING_PHASES[phase].msg;
+      msg.style.opacity = '1';
+      bar.style.width = ((phase + 1) / LOADING_PHASES.length * 85) + '%';
+      document.getElementById(`layer_${phase}`)?.classList.add('done');
+      phase++;
+    }, 200);
+  };
+  advance();
+  const interval = setInterval(() => {
+    if (phase < LOADING_PHASES.length) advance();
+    else clearInterval(interval);
+  }, 1400);
+  return { interval, bar };
+}
+
+function stopLoading(loaderHandle) {
+  clearInterval(loaderHandle.interval);
+  loaderHandle.bar.style.width = '100%';
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').classList.remove('active');
+  }, 400);
+}
+
+// ── MAIN EXCAVATION ────────────────────────────
+document.getElementById('excavateBtn').addEventListener('click', runExcavation);
+
+async function runExcavation() {
+  const entries = getEntries();
+  if (entries.length < 2) { showToast('Add at least 2 dated writing samples'); return; }
+
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('excavateBtn').disabled = true;
+  window.scrollTo({ top: document.getElementById('excavateSection').offsetTop + 300, behavior: 'smooth' });
+
+  const loaderHandle = startLoading();
+
+  const prompt = `You are a Personality Archaeologist — a rigorous, literary analyst who excavates identity through writing.
+
+Analyze these ${entries.length} chronologically-ordered writing samples from the same person:
+
+${entries.map((e, i) => `=== SAMPLE ${i + 1} [Date: ${e.date}] ===\n${e.text}`).join('\n\n')}
+
+Return ONLY a valid JSON object. No markdown fences. No explanation. Exactly this structure:
+
+{
+  "traitScores": [
+    {
+      "date": "YYYY-MM-DD",
+      "Openness": <0-100>,
+      "Certainty": <0-100>,
+      "Warmth": <0-100>,
+      "Assertiveness": <0-100>,
+      "Idealism": <0-100>,
+      "Cynicism": <0-100>,
+      "Emotional depth": <0-100>,
+      "Introspection": <0-100>
+    }
+  ],
+  "pastSelf": "2-3 vivid, specific sentences about who this person was in their first sample. Be precise — cite evidence from the text. No generic clichés.",
+  "presentSelf": "2-3 sentences about who they are now in the final sample. Specific and evidenced.",
+  "projectedSelf": "2-3 sentences about where this trajectory leads. Thoughtful projection, not reassuring platitude.",
+  "inflectionPoints": [
+    {
+      "date": "YYYY-MM-DD",
+      "description": "Specific, evidenced description of what identity shift occurred and what it signals. 2 sentences max. Present tense. No clichés."
+    }
+  ],
+  "dominantShift": "One word capturing the overarching direction of change (e.g., 'calcification', 'opening', 'withdrawal', 'integration')",
+  "fossilTrait": "The trait that has persisted most unchanged — name it and briefly say why",
+  "archaeologistReport": "5-7 sentences in the voice of a precise, slightly melancholic literary archaeologist. Describe the full arc of identity drift. What was buried? What emerged? What forces shaped the strata? Use specific evidence from the texts. Evocative but grounded."
+}
+
+Be precise and specific. Reference actual content from the texts. Do not use generic psychological language or hollow encouragement.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const raw = data.content.map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    lastResult = result;
+
+    stopLoading(loaderHandle);
+    excavationCount++;
+    localStorage.setItem('excavationCount', excavationCount);
+    document.getElementById('heroStatAnalyzed').textContent = excavationCount;
+
+    renderAll(result, entries);
+
+  } catch (err) {
+    stopLoading(loaderHandle);
+    showToast('Excavation failed — check your samples and try again');
+    console.error(err);
+  } finally {
+    document.getElementById('excavateBtn').disabled = false;
+  }
+}
+
+// ── RENDER ALL ─────────────────────────────────
+function renderAll(r, entries) {
+  renderPortraits(r);
+  renderChart(r.traitScores);
+  renderInflections(r.inflectionPoints);
+  renderTraitBars(r.traitScores);
+  renderReport(r);
+  renderSuggestions(r);
+
+  const res = document.getElementById('results');
+  res.classList.add('visible');
+
+  setTimeout(() => {
+    res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Trigger inflection animations
+    setTimeout(() => {
+      document.querySelectorAll('.inflection-item').forEach((el, i) => {
+        setTimeout(() => el.classList.add('visible'), i * 200);
+      });
+    }, 600);
+    // Re-observe reveals in results
+    document.querySelectorAll('#results .reveal').forEach(el => {
+      el.classList.remove('in-view');
+      revealObserver.observe(el);
+    });
+  }, 200);
+}
+
+// ── PORTRAITS ─────────────────────────────────
+function renderPortraits(r) {
+  const grid = document.getElementById('portraitsGrid');
+  const portraits = [
+    { era: 'Ghost Self · Past', label: 'Who You Were', text: r.pastSelf, tag: '↩', tagColor: 'var(--fossil)' },
+    { era: 'Present Self · Now', label: 'Who You Are', text: r.presentSelf, tag: '●', tagColor: 'var(--amber)' },
+    { era: 'Projected Self · Becoming', label: 'Who You\'re Becoming', text: r.projectedSelf, tag: '↗', tagColor: 'var(--sage)' },
+  ];
+  grid.innerHTML = portraits.map(p => `
+    <div class="portrait-card">
+      <div class="portrait-era">${p.era}</div>
+      <div class="portrait-label">${p.label}</div>
+      <div class="portrait-text">${p.text}</div>
+      <div class="portrait-tag" style="color:${p.tagColor}">${p.tag}</div>
+    </div>
+  `).join('');
+  if (r.dominantShift || r.fossilTrait) {
+    grid.insertAdjacentHTML('afterend', `
+      <div style="display:flex; gap:12px; margin-top:12px; flex-wrap:wrap;">
+        ${r.dominantShift ? `<div style="background:rgba(200,134,10,0.08);border:1px solid rgba(200,134,10,0.2);padding:8px 16px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);">dominant shift: ${r.dominantShift}</div>` : ''}
+        ${r.fossilTrait ? `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);padding:8px 16px;font-size:10px;letter-spacing:0.08em;color:var(--dust);max-width:400px;">fossil trait: ${r.fossilTrait}</div>` : ''}
+      </div>
+    `);
+  }
+}
+
+// ── CHART ──────────────────────────────────────
+function renderChart(scores) {
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  hiddenTraits.clear();
+
+  const legend = document.getElementById('chartLegend');
+  legend.innerHTML = TRAITS.map((t, i) => `
+    <div class="legend-item" data-trait="${t}">
+      <div class="legend-swatch" style="background:${TRAIT_COLORS[i]}"></div>
+      <span>${t}</span>
+    </div>
+  `).join('');
+
+  legend.querySelectorAll('.legend-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const trait = item.dataset.trait;
+      if (hiddenTraits.has(trait)) {
+        hiddenTraits.delete(trait);
+        item.classList.remove('muted');
+      } else {
+        hiddenTraits.add(trait);
+        item.classList.add('muted');
+      }
+      updateChartVisibility();
+    });
+  });
+
+  const labels = scores.map(s => s.date);
+  const datasets = TRAITS.map((trait, i) => ({
+    label: trait,
+    data: scores.map(s => Math.round(s[trait] || 0)),
+    borderColor: TRAIT_COLORS[i],
+    backgroundColor: TRAIT_COLORS[i] + '18',
+    borderWidth: 1.5,
+    pointRadius: 5,
+    pointHoverRadius: 8,
+    pointBackgroundColor: TRAIT_COLORS[i],
+    pointBorderColor: '#0d0c0a',
+    pointBorderWidth: 2,
+    tension: 0.4,
+    fill: false
+  }));
+
+  chartInstance = new Chart(document.getElementById('driftChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 900, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1510',
+          borderColor: 'rgba(200,134,10,0.3)',
+          borderWidth: 1,
+          titleColor: '#c8860a',
+          bodyColor: '#c9bfa8',
+          titleFont: { family: "'Space Mono', monospace", size: 11 },
+          bodyFont: { family: "'Space Mono', monospace", size: 11 },
+          padding: 14,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(200,134,10,0.06)', lineWidth: 1 },
+          border: { color: 'rgba(200,134,10,0.15)' },
+          ticks: { font: { family: "'Space Mono', monospace", size: 10 }, color: '#8b7d65', maxRotation: 30 }
+        },
+        y: {
+          min: 0, max: 100,
+          grid: { color: 'rgba(200,134,10,0.06)', lineWidth: 1 },
+          border: { color: 'rgba(200,134,10,0.15)' },
+          ticks: { font: { family: "'Space Mono', monospace", size: 10 }, color: '#8b7d65', stepSize: 25,
+            callback: v => v + '%'
+          }
+        }
+      }
+    }
+  });
+}
+
+function updateChartVisibility() {
+  if (!chartInstance) return;
+  chartInstance.data.datasets.forEach((ds, i) => {
+    const meta = chartInstance.getDatasetMeta(i);
+    meta.hidden = hiddenTraits.has(ds.label);
+  });
+  chartInstance.update();
+}
+
+// ── INFLECTIONS ────────────────────────────────
+function renderInflections(points) {
+  const timeline = document.getElementById('inflectionTimeline');
+  if (!points || !points.length) {
+    timeline.innerHTML = '<div style="font-size:13px;color:var(--fossil);font-style:italic;">No major inflection points detected in this range.</div>';
+    return;
+  }
+  timeline.innerHTML = points.map(p => `
+    <div class="inflection-item">
+      <div class="inflection-dot"></div>
+      <div class="inflection-date">${p.date}</div>
+      <div class="inflection-content">
+        <div class="inflection-text">${p.description}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── TRAIT BARS ─────────────────────────────────
+function renderTraitBars(scores) {
+  const first = scores[0];
+  const last = scores[scores.length - 1];
+  const grid = document.getElementById('traitBarsGrid');
+  grid.innerHTML = TRAITS.map((trait, i) => {
+    const val = Math.round(last[trait] || 0);
+    const firstVal = Math.round(first[trait] || 0);
+    const delta = val - firstVal;
+    const deltaStr = delta === 0 ? '—' : (delta > 0 ? '+' + delta : delta.toString());
+    const deltaClass = delta > 0 ? 'up' : delta < 0 ? 'down' : '';
+    return `
+      <div class="trait-row">
+        <div class="trait-header">
+          <div class="trait-name">${trait}</div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span class="trait-delta ${deltaClass}">${deltaStr} from start</span>
+            <span class="trait-val">${val}</span>
+          </div>
+        </div>
+        <div class="trait-bar-bg">
+          <div class="trait-bar-fill" data-target="${val}" style="background:${TRAIT_COLORS[i]}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Animate bars in
+  setTimeout(() => {
+    grid.querySelectorAll('.trait-bar-fill').forEach(bar => {
+      bar.style.width = bar.dataset.target + '%';
+    });
+  }, 400);
+}
+
+// ── REPORT ─────────────────────────────────────
+function renderReport(r) {
+  const el = document.getElementById('reportText');
+  el.textContent = '';
+  const text = r.archaeologistReport || '';
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i >= text.length) { clearInterval(interval); return; }
+    el.textContent += text[i];
+    i += 2;
+  }, 18);
+
+  document.getElementById('copyReportBtn').onclick = () => {
+    navigator.clipboard.writeText(text).then(() => showToast('Report copied to clipboard'));
+  };
+
+  document.getElementById('saveResultsBtn').onclick = () => {
+    const entries = getEntries();
+    const blob = new Blob([buildExportText(r, entries)], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'personality-excavation.txt';
+    a.click();
+    showToast('Saved as personality-excavation.txt');
+  };
+
+  document.getElementById('newExcavationBtn').onclick = () => {
+    document.getElementById('results').classList.remove('visible');
+    document.getElementById('excavateSection').scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => showToast('Cleared — add new samples to dig again'), 500);
+  };
+}
+
+function buildExportText(r, entries) {
+  return `PERSONALITY ARCHAEOLOGIST · EXCAVATION REPORT
+${'═'.repeat(50)}
+
+SAMPLES ANALYZED: ${entries.length}
+DATES: ${entries[0].date} → ${entries[entries.length-1].date}
+
+GHOST SELF (PAST)
+${r.pastSelf}
+
+PRESENT SELF
+${r.presentSelf}
+
+PROJECTED SELF (BECOMING)
+${r.projectedSelf}
+
+DOMINANT SHIFT: ${r.dominantShift || 'N/A'}
+FOSSIL TRAIT: ${r.fossilTrait || 'N/A'}
+
+INFLECTION POINTS
+${(r.inflectionPoints||[]).map(p => `${p.date}: ${p.description}`).join('\n')}
+
+TRAIT PROFILE (CURRENT)
+${TRAITS.map((t,i) => `${t}: ${Math.round(r.traitScores[r.traitScores.length-1][t]||0)}/100`).join('\n')}
+
+ARCHAEOLOGIST'S REPORT
+${r.archaeologistReport}
+
+${'─'.repeat(50)}
+Generated by Personality Archaeologist
+`;
+}
+
+// ── SUGGESTIONS ────────────────────────────────
+const SUGGESTIONS = [
+  'What caused the biggest inflection point?',
+  'Which trait change is most significant?',
+  'What does the projection mean in practice?',
+  'Analyze the emotional vocabulary shift across samples',
+  'What would past-me think of present-me?',
+];
+
+function renderSuggestions(r) {
+  const btns = document.getElementById('shareBtns');
+  btns.innerHTML = SUGGESTIONS.map(s => `
+    <button class="btn-action" onclick="sendToChat('${s.replace(/'/g, "\\'")}')">↗ ${s}</button>
+  `).join('');
+}
+
+function sendToChat(msg) {
+  if (typeof sendPrompt === 'function') sendPrompt(msg);
+  else showToast('Open in Claude to explore further');
+}
+
+// ── TOAST ──────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── KEYBOARD SHORTCUT ──────────────────────────
+document.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    document.getElementById('excavateBtn').click();
+  }
+  if (e.key === 'Escape') closeCalendar();
+});
+
+// ── CUSTOM CALENDAR ────────────────────────────
+var activeCalBackdrop = null;
+var activeEntryCard = null;
+var calViewYear = 0, calViewMonth = 0;
+var calYearMode = false;
+var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var WDAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+function openCalendar(triggerBtn, entryCard) {
+  closeCalendar();
+  activeEntryCard = entryCard;
+  var existing = entryCard.dataset.date;
+  var ref = existing ? new Date(existing + 'T12:00:00') : new Date();
+  calViewYear = ref.getFullYear();
+  calViewMonth = ref.getMonth();
+  calYearMode = false;
+
+  var backdrop = document.createElement('div');
+  backdrop.className = 'cal-backdrop';
+  backdrop.id = 'calBackdrop';
+  backdrop.addEventListener('click', function(e) {
+    if (e.target === backdrop) closeCalendar();
+  });
+
+  var popup = document.createElement('div');
+  popup.className = 'cal-popup';
+  popup.id = 'calPopup';
+  backdrop.appendChild(popup);
+  document.body.appendChild(backdrop);
+  activeCalBackdrop = backdrop;
+
+  // Position popup near the button
+  var rect = triggerBtn.getBoundingClientRect();
+  var top = rect.bottom + 6;
+  var left = rect.left;
+  if (left + 260 > window.innerWidth - 12) left = window.innerWidth - 272;
+  if (top + 320 > window.innerHeight - 12) top = rect.top - 320;
+  popup.style.top = top + 'px';
+  popup.style.left = left + 'px';
+
+  renderCalendar(existing);
+}
+
+function renderCalendar(selectedIso) {
+  var popup = document.getElementById('calPopup');
+  if (!popup) return;
+
+  if (calYearMode) {
+    renderYearPicker(selectedIso, popup);
+    return;
+  }
+
+  var today = new Date();
+  var selDate = selectedIso ? new Date(selectedIso + 'T12:00:00') : null;
+
+  var firstDay = new Date(calViewYear, calViewMonth, 1).getDay();
+  var daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+
+  var html = '<div class="cal-header">' +
+    '<button class="cal-nav-btn" id="calPrev">&lsaquo;</button>' +
+    '<span class="cal-month-label" id="calMonthLabel">' + MONTHS[calViewMonth] + ', ' + calViewYear + '</span>' +
+    '<button class="cal-nav-btn" id="calNext">&rsaquo;</button>' +
+  '</div>' +
+  '<div class="cal-weekdays">' + WDAYS.map(function(d) { return '<div class="cal-wd">' + d + '</div>'; }).join('') + '</div>' +
+  '<div class="cal-days">';
+
+  for (var i = 0; i < firstDay; i++) {
+    html += '<div class="cal-day cal-day-empty"></div>';
+  }
+  for (var d = 1; d <= daysInMonth; d++) {
+    var iso = calViewYear + '-' + String(calViewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var cls = 'cal-day';
+    var isToday = (d === today.getDate() && calViewMonth === today.getMonth() && calViewYear === today.getFullYear());
+    var isSel = selDate && (d === selDate.getDate() && calViewMonth === selDate.getMonth() && calViewYear === selDate.getFullYear());
+    if (isToday) cls += ' cal-day-today';
+    if (isSel) cls += ' cal-day-selected';
+    html += '<div class="' + cls + '" data-iso="' + iso + '">' + d + '</div>';
+  }
+
+  html += '</div>' +
+  '<div class="cal-footer">' +
+    '<button class="cal-foot-btn" id="calClear">clear</button>' +
+    '<button class="cal-foot-btn" id="calToday">today</button>' +
+  '</div>';
+
+  popup.innerHTML = html;
+
+  popup.querySelector('#calPrev').addEventListener('click', function() {
+    calViewMonth--;
+    if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+    renderCalendar(activeEntryCard ? activeEntryCard.dataset.date : null);
+  });
+  popup.querySelector('#calNext').addEventListener('click', function() {
+    calViewMonth++;
+    if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+    renderCalendar(activeEntryCard ? activeEntryCard.dataset.date : null);
+  });
+  popup.querySelector('#calMonthLabel').addEventListener('click', function() {
+    calYearMode = true;
+    renderCalendar(activeEntryCard ? activeEntryCard.dataset.date : null);
+  });
+  popup.querySelector('#calClear').addEventListener('click', function() {
+    setEntryDate(activeEntryCard, '');
+    closeCalendar();
+  });
+  popup.querySelector('#calToday').addEventListener('click', function() {
+    var t = new Date();
+    var iso = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+    setEntryDate(activeEntryCard, iso);
+    closeCalendar();
+  });
+  popup.querySelectorAll('.cal-day:not(.cal-day-empty)').forEach(function(el) {
+    el.addEventListener('click', function() {
+      setEntryDate(activeEntryCard, el.dataset.iso);
+      closeCalendar();
+    });
+  });
+}
+
+function renderYearPicker(selectedIso, popup) {
+  var currentYear = new Date().getFullYear();
+  var startYear = 1950;
+  var years = [];
+  for (var y = currentYear; y >= startYear; y--) years.push(y);
+
+  var html = '<div class="cal-header">' +
+    '<button class="cal-nav-btn" id="calYearBack">&larr;</button>' +
+    '<span class="cal-month-label">Select Year</span>' +
+    '<button class="cal-nav-btn" style="visibility:hidden"></button>' +
+  '</div>' +
+  '<div class="cal-year-grid">' +
+  years.map(function(y) {
+    var cls = 'cal-year-item' + (y === calViewYear ? ' selected' : '');
+    return '<div class="' + cls + '" data-year="' + y + '">' + y + '</div>';
+  }).join('') +
+  '</div>';
+
+  popup.innerHTML = html;
+
+  popup.querySelector('#calYearBack').addEventListener('click', function() {
+    calYearMode = false;
+    renderCalendar(selectedIso);
+  });
+  popup.querySelectorAll('.cal-year-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      calViewYear = parseInt(el.dataset.year);
+      calYearMode = false;
+      renderCalendar(selectedIso);
+    });
+  });
+
+  // Scroll selected year into view
+  var sel = popup.querySelector('.cal-year-item.selected');
+  if (sel) setTimeout(function() { sel.scrollIntoView({ block: 'center' }); }, 0);
+}
+
+function setEntryDate(card, iso) {
+  if (!card) return;
+  card.dataset.date = iso;
+  var lbl = card.querySelector('.date-display');
+  if (lbl) lbl.textContent = formatDisplayDate(iso);
+  updateEntryCount();
+}
+
+function closeCalendar() {
+  if (activeCalBackdrop) {
+    activeCalBackdrop.remove();
+    activeCalBackdrop = null;
+  }
+  activeEntryCard = null;
+}
+
+</script>
+</body>
+</html>
